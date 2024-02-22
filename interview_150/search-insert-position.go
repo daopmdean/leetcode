@@ -27,6 +27,4 @@ func searchInsert(nums []int, target int) int {
 			end = i
 		}
 	}
-
-	return 0
 }
