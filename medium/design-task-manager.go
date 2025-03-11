@@ -3,13 +3,14 @@ package medium
 import "fmt"
 
 type TaskManager struct {
-	tasks *TaskLink
+	tasks *TaskTree
 	m     map[int]*Task // taskId - Task
 }
 
-type TaskLink struct {
-	Val  *Task
-	Next *TaskLink
+type TaskTree struct {
+	Val   *Task
+	Left  *TaskTree
+	Right *TaskTree
 }
 
 type Task struct {
@@ -18,79 +19,76 @@ type Task struct {
 	Priority int
 }
 
-func (tl *TaskLink) Empty() bool {
-	return tl == nil
+func (tr *TaskTree) Empty() bool {
+	return tr == nil
 }
 
-func (tl *TaskLink) Add(task *Task) *TaskLink {
-	if tl == nil {
-		return &TaskLink{
+func (tr *TaskTree) Add(task *Task) *TaskTree {
+	if tr == nil {
+		return &TaskTree{
 			Val: task,
 		}
 	}
 
-	if task.Priority > tl.Val.Priority ||
-		(task.Priority == tl.Val.Priority && task.TaskId > tl.Val.TaskId) {
-		return &TaskLink{
-			Val:  task,
-			Next: tl,
-		}
-	}
-
-	first, sec := tl, tl.Next
-	for sec != nil {
-		if task.Priority > sec.Val.Priority ||
-			(task.Priority == sec.Val.Priority && task.TaskId > sec.Val.TaskId) {
-			first.Next = &TaskLink{
-				Val:  task,
-				Next: sec,
+	node := tr
+	for node != nil {
+		if task.Priority > node.Val.Priority ||
+			(task.Priority == node.Val.Priority && task.TaskId > node.Val.TaskId) {
+			if node.Right != nil {
+				node = node.Right
+			} else {
+				node.Right = &TaskTree{
+					Val: task,
+				}
+				break
 			}
-			return tl
 		} else {
-			first = sec
-			sec = sec.Next
+			if node.Left != nil {
+				node = node.Left
+			} else {
+				node.Left = &TaskTree{
+					Val: task,
+				}
+				break
+			}
 		}
 	}
 
-	first.Next = &TaskLink{
-		Val: task,
-	}
-
-	return tl
+	return tr
 }
 
-func (tl *TaskLink) Edit(task *Task) *TaskLink {
-	tl = tl.Rmv(task.TaskId)
-	return tl.Add(task)
+func (tr *TaskTree) Edit(task *Task) *TaskTree {
+	tr = tr.Rmv(task)
+	return tr.Add(task)
 }
 
-func (tl *TaskLink) Rmv(taskId int) *TaskLink {
-	if tl == nil {
+func (tr *TaskTree) Rmv(task *Task) *TaskTree {
+	if tr == nil {
 		return nil
 	}
 
-	first, sec := tl, tl.Next
-	if first.Val.TaskId == taskId {
-		return sec
-	}
-
-	for sec != nil {
-		if sec.Val.TaskId == taskId {
-			first.Next = sec.Next
-			return tl
-		}
-		first = sec
-		sec = sec.Next
-	}
-
-	return tl
+	return tr
 }
 
-func (tl *TaskLink) Pop() *TaskLink {
-	if tl == nil {
+func (tr *TaskTree) Pop() *TaskTree {
+	if tr == nil {
 		return nil
 	}
-	return tl.Next
+
+	node, right := tr, tr.Right
+	for right != nil {
+		node = right
+		right = right.Right
+	}
+
+	node = tr
+	for node.Right != nil {
+		node = node.Right
+	}
+
+	//leftMost
+
+	return node
 }
 
 // [userId, taskId, priority]
@@ -107,10 +105,11 @@ func Constructor(tasks [][]int) TaskManager {
 	return tm
 }
 
-func print(tasks *TaskLink) {
-	for tasks != nil {
+func print(tasks *TaskTree) {
+	if tasks != nil {
+		print(tasks.Right)
 		fmt.Print("Priority: ", tasks.Val.Priority, ", TaskId: ", tasks.Val.TaskId, ", UserId: ", tasks.Val.UserId, "\n")
-		tasks = tasks.Next
+		print(tasks.Left)
 	}
 }
 
@@ -130,10 +129,11 @@ func (tm *TaskManager) Edit(taskId int, newPriority int) {
 		UserId:   tm.m[taskId].UserId,
 		Priority: newPriority,
 	})
+	tm.m[taskId].Priority = newPriority
 }
 
 func (tm *TaskManager) Rmv(taskId int) {
-	tm.tasks = tm.tasks.Rmv(taskId)
+	tm.tasks = tm.tasks.Rmv(tm.m[taskId])
 }
 
 func (tm *TaskManager) ExecTop() int {
@@ -141,9 +141,8 @@ func (tm *TaskManager) ExecTop() int {
 		return -1
 	}
 
-	pickedTask := tm.tasks.Val
-	tm.tasks = tm.tasks.Pop()
-	return pickedTask.UserId
+	pickedTask := tm.tasks.Pop()
+	return pickedTask.Val.UserId
 }
 
 /**
