@@ -19,3 +19,11 @@ func TestTM(t *testing.T) {
 	//tm.Edit(4, 48)
 	fmt.Println()
 }
+
+func print(tasks *TaskTree) {
+	if tasks != nil {
+		print(tasks.Right)
+		fmt.Print("Priority: ", tasks.Val.Priority, ", TaskId: ", tasks.Val.TaskId, ", UserId: ", tasks.Val.UserId, "\n")
+		print(tasks.Left)
+	}
+}
