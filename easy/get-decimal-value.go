@@ -1,3 +1,7 @@
+package easy
+
+import "math"
+
 /**
  * Definition for singly-linked list.
  * type ListNode struct {
@@ -5,6 +9,11 @@
  *     Next *ListNode
  * }
  */
+type ListNode struct {
+	Val  int
+	Next *ListNode
+}
+
 func getDecimalValue(head *ListNode) int {
 	nums := make([]int, 0)
 	for head != nil {
